@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Responsibility Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .no-spinner {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-indigo-600">Weekly Responsibility Tracker</h1>
+            <p class="text-gray-600 mt-2">A simple way to track chores and calculate allowance.</p>
+        </header>
+
+        <!-- Chore Management Section -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Manage Chores</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="new-chore-input" placeholder="Enter a new chore (e.g., Make bed)" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <button id="add-chore-btn" class="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add Chore</button>
+            </div>
+        </div>
+
+        <!-- Main Tracker Section -->
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <!-- Week Navigation -->
+            <div class="flex justify-between items-center mb-6">
+                <button id="prev-week-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition">&larr; Previous Week</button>
+                <h2 id="week-display" class="text-xl sm:text-2xl font-bold text-center"></h2>
+                <button id="next-week-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition">Next Week &rarr;</button>
+            </div>
+
+            <!-- Chore Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsibility</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="0">Mon</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="1">Tue</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="2">Wed</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="3">Thu</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="4">Fri</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="5">Sat</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-day="6">Sun</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chore-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Chore rows will be dynamically inserted here -->
+                    </tbody>
+                </table>
+                 <div id="no-chores-message" class="text-center py-8 text-gray-500 hidden">
+                    <p>No chores added yet. Add a chore above to get started!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Summary Section -->
+        <div class="bg-white p-6 rounded-xl shadow-md mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Weekly Summary</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-indigo-50 p-4 rounded-lg text-center">
+                    <p class="text-sm font-medium text-indigo-800">Weekly Average</p>
+                    <p id="weekly-average" class="text-3xl font-bold text-indigo-600">0.00</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg text-center">
+                    <p class="text-sm font-medium text-green-800">Base Payout</p>
+                    <p id="base-payout" class="text-3xl font-bold text-green-600">$0.00</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                    <p class="text-sm font-medium text-yellow-800">Bonus Streak (Weeks >= 4.0)</p>
+                    <p id="bonus-streak" class="text-3xl font-bold text-yellow-600">0</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <p class="text-sm font-medium text-blue-800">Total Payout</p>
+                    <p id="total-payout" class="text-3xl font-bold text-blue-600">$0.00</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Chore</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">Are you sure you want to delete this chore? This will remove it permanently.</p>
+                </div>
+                <div class="items-center px-4 py-3 flex justify-center gap-4">
+                    <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-auto shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Cancel
+                    </button>
+                    <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        // This code now automatically uses the configuration provided by the environment.
+        const firebaseConfig = typeof __firebase_config !== 'undefined'
+            ? JSON.parse(__firebase_config)
+            : {
+                // Fallback configuration for local development
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_AUTH_DOMAIN",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_STORAGE_BUCKET",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId;
+        let currentWeekStartDate;
+        let chores = [];
+        let scores = {};
+        let choreToDeleteId = null;
+
+        // --- UI Elements ---
+        const newChoreInput = document.getElementById('new-chore-input');
+        const addChoreBtn = document.getElementById('add-chore-btn');
+        const choreTableBody = document.getElementById('chore-table-body');
+        const weekDisplay = document.getElementById('week-display');
+        const prevWeekBtn = document.getElementById('prev-week-btn');
+        const nextWeekBtn = document.getElementById('next-week-btn');
+        const noChoresMessage = document.getElementById('no-chores-message');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+
+        // --- Date Helper Functions ---
+        const getWeekStartDate = (date) => {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+            return new Date(d.setDate(diff));
+        };
+
+        const formatDate = (date) => {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+        
+        const getWeekId = (date) => {
+            const startOfWeek = getWeekStartDate(date);
+            return `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
+        };
+
+        // --- Main Application Logic ---
+        function setCurrentWeek(date) {
+            currentWeekStartDate = getWeekStartDate(date);
+            const weekId = getWeekId(currentWeekStartDate);
+            
+            const endDate = new Date(currentWeekStartDate);
+            endDate.setDate(endDate.getDate() + 6);
+
+            weekDisplay.textContent = `${formatDate(currentWeekStartDate)} - ${formatDate(endDate)}`;
+            
+            updateTableHeaderDates();
+            listenForScores(weekId);
+        }
+
+        function updateTableHeaderDates() {
+            const headers = document.querySelectorAll('thead th[data-day]');
+            headers.forEach(th => {
+                const dayOffset = parseInt(th.dataset.day, 10);
+                const date = new Date(currentWeekStartDate);
+                date.setDate(date.getDate() + dayOffset);
+                th.innerHTML = `${th.textContent.substring(0,3)} <br> <span class="text-gray-400 font-normal">${date.getDate()}</span>`;
+            });
+        }
+
+        // --- Firestore Functions ---
+        async function listenForChores() {
+            if (!userId) return;
+            const choresCollection = collection(db, `artifacts/${appId}/users/${userId}/chores`);
+            onSnapshot(choresCollection, (snapshot) => {
+                chores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                chores.sort((a, b) => a.name.localeCompare(b.name));
+                renderChores();
+            });
+        }
+
+        async function listenForScores(weekId) {
+            if (!userId) return;
+            const weekDocRef = doc(db, `artifacts/${appId}/users/${userId}/weeks`, weekId);
+            onSnapshot(weekDocRef, (docSnap) => {
+                scores = docSnap.exists() ? docSnap.data().scores || {} : {};
+                renderChoresWithScores();
+                calculateSummary();
+            });
+        }
+
+        async function addChore() {
+            const choreName = newChoreInput.value.trim();
+            if (choreName && userId) {
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/users/${userId}/chores`), { name: choreName });
+                    newChoreInput.value = '';
+                } catch (error) {
+                    console.error("Error adding chore: ", error);
+                }
+            }
+        }
+
+        async function updateScore(choreId, dayIndex, value) {
+            if (!userId) return;
+            const weekId = getWeekId(currentWeekStartDate);
+            const weekDocRef = doc(db, `artifacts/${appId}/users/${userId}/weeks`, weekId);
+            const scoreKey = `${choreId}.${dayIndex}`;
+            
+            const newScores = { ...scores, [scoreKey]: value };
+            
+            try {
+                await setDoc(weekDocRef, { scores: newScores }, { merge: true });
+            } catch (error) {
+                console.error("Error updating score: ", error);
+            }
+        }
+
+        // --- Rendering Functions ---
+        function renderChores() {
+             if (chores.length > 0) {
+                noChoresMessage.classList.add('hidden');
+                choreTableBody.parentElement.classList.remove('hidden');
+            } else {
+                noChoresMessage.classList.remove('hidden');
+                choreTableBody.parentElement.classList.add('hidden');
+            }
+            renderChoresWithScores();
+            calculateSummary();
+        }
+
+        function renderChoresWithScores() {
+            choreTableBody.innerHTML = '';
+            chores.forEach(chore => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <span class="font-medium">${chore.name}</span>
+                            <button class="delete-chore-btn ml-3 text-gray-400 hover:text-red-600 p-1 rounded-full" data-id="${chore.id}" title="Delete chore">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                for (let i = 0; i < 7; i++) {
+                    const cell = document.createElement('td');
+                    cell.classList.add('px-4', 'py-2', 'whitespace-nowrap');
+                    const scoreKey = `${chore.id}.${i}`;
+                    const currentScore = scores[scoreKey] !== undefined ? scores[scoreKey] : '';
+                    
+                    const select = document.createElement('select');
+                    select.classList.add('score-select', 'w-20', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'focus:ring-indigo-500', 'focus:border-indigo-500');
+                    select.dataset.choreId = chore.id;
+                    select.dataset.dayIndex = i;
+
+                    const options = ['N/A', '0', '1', '2', '3', '5'];
+                    select.innerHTML = `<option value="" disabled selected hidden>Score</option>`;
+                    options.forEach(opt => {
+                        select.innerHTML += `<option value="${opt}" ${String(currentScore) === opt ? 'selected' : ''}>${opt}</option>`;
+                    });
+
+                    cell.appendChild(select);
+                    row.appendChild(cell);
+                }
+                choreTableBody.appendChild(row);
+            });
+        }
+
+        // --- Calculation Functions ---
+        async function calculateSummary() {
+            let totalScore = 0;
+            let scoreCount = 0;
+            
+            Object.values(scores).forEach(score => {
+                if (score !== 'N/A' && score !== '') {
+                    totalScore += parseInt(score, 10);
+                    scoreCount++;
+                }
+            });
+
+            const average = scoreCount > 0 ? totalScore / scoreCount : 0;
+            document.getElementById('weekly-average').textContent = average.toFixed(2);
+            
+            let basePayout = 0;
+            if (average >= 5) basePayout = 30;
+            else if (average >= 4) basePayout = 25;
+            else if (average >= 3) basePayout = 15;
+            else if (average >= 2) basePayout = 10;
+            
+            document.getElementById('base-payout').textContent = `$${basePayout.toFixed(2)}`;
+
+            const streak = await calculateBonusStreak();
+            document.getElementById('bonus-streak').textContent = streak;
+
+            let bonusAmount = 0;
+            if (streak > 1) {
+                const bonusPercentage = (streak - 1) * 0.10;
+                bonusAmount = basePayout * bonusPercentage;
+            }
+
+            const totalPayout = basePayout + bonusAmount;
+            document.getElementById('total-payout').textContent = `$${totalPayout.toFixed(2)}`;
+        }
+
+        async function calculateBonusStreak() {
+            if (!userId) return 0;
+
+            let streak = 0;
+            let checkDate = new Date(currentWeekStartDate);
+            let consecutive = true;
+
+            while (consecutive) {
+                const weekId = getWeekId(checkDate);
+                const weekDocRef = doc(db, `artifacts/${appId}/users/${userId}/weeks`, weekId);
+                const weekDoc = await getDoc(weekDocRef);
+
+                if (weekDoc.exists()) {
+                    const weekScores = weekDoc.data().scores || {};
+                    let totalScore = 0;
+                    let scoreCount = 0;
+                    Object.values(weekScores).forEach(score => {
+                        if (score !== 'N/A' && score !== '') {
+                            totalScore += parseInt(score, 10);
+                            scoreCount++;
+                        }
+                    });
+                    
+                    const average = scoreCount > 0 ? totalScore / scoreCount : 0;
+                    
+                    if (average >= 4) {
+                        streak++;
+                    } else {
+                        consecutive = false;
+                    }
+                } else {
+                    consecutive = false;
+                }
+                checkDate.setDate(checkDate.getDate() - 7);
+            }
+            return streak;
+        }
+
+        // --- Modal Logic ---
+        function showDeleteConfirm(choreId) {
+            choreToDeleteId = choreId;
+            confirmationModal.classList.remove('hidden');
+        }
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (choreToDeleteId && userId) {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/chores`, choreToDeleteId));
+                } catch (error) {
+                    console.error("Error deleting chore: ", error);
+                } finally {
+                    choreToDeleteId = null;
+                    confirmationModal.classList.add('hidden');
+                }
+            }
+        });
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            choreToDeleteId = null;
+            confirmationModal.classList.add('hidden');
+        });
+
+        // --- Event Listeners ---
+        addChoreBtn.addEventListener('click', addChore);
+        newChoreInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addChore();
+        });
+
+        choreTableBody.addEventListener('change', (e) => {
+            if (e.target.classList.contains('score-select')) {
+                const { choreId, dayIndex } = e.target.dataset;
+                updateScore(choreId, dayIndex, e.target.value);
+            }
+        });
+
+        choreTableBody.addEventListener('click', (e) => {
+            const deleteButton = e.target.closest('.delete-chore-btn');
+            if (deleteButton) {
+                showDeleteConfirm(deleteButton.dataset.id);
+            }
+        });
+
+        prevWeekBtn.addEventListener('click', () => {
+            const newDate = new Date(currentWeekStartDate);
+            newDate.setDate(newDate.getDate() - 7);
+            setCurrentWeek(newDate);
+        });
+
+        nextWeekBtn.addEventListener('click', () => {
+            const newDate = new Date(currentWeekStartDate);
+            newDate.setDate(newDate.getDate() + 7);
+            setCurrentWeek(newDate);
+        });
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                userId = user.uid;
+                setCurrentWeek(new Date());
+                listenForChores();
+            } else {
+                // Use custom token if available, otherwise sign in anonymously
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    signInWithCustomToken(auth, __initial_auth_token).catch(error => {
+                        console.error("Custom token sign-in failed: ", error);
+                    });
+                } else {
+                    signInAnonymously(auth).catch(error => {
+                        console.error("Anonymous sign-in failed: ", error);
+                    });
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
